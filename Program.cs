@@ -124,17 +124,29 @@ namespace GifDump
 
                         switch ( extensionType )
                         {
+                            case 0xF9: // Graphic Control
+                            {
+                                Console.WriteLine( $"Graphic Control" );
+                                var blockSize = file.ReadByte();
+                                var gpacked = file.ReadByte();
+                                var delayTime = file.ReadWord();
+                                var transparentColorIndex = file.ReadByte();
+                                break;
+                            }
 
                             case 0xFF: // Application Extension
+                            {
+                                Console.WriteLine( $"Application Extension" );
                                 var blockSize = file.ReadByte();
                                 var appIdentifier = file.ReadBytes( blockSize - 3 );
                                 var authCode = file.ReadBytes( 3 );
 
                                 var appDataLen = file.ReadByte();
                                 var appData = file.ReadBytes( appDataLen );
-                                var blockEnd = file.ReadByte();
                                 break;
+                            }
                         }
+                        var blockEnd = file.ReadByte();
                     }
 
                     // Local Image Descriptor
