@@ -81,9 +81,9 @@ namespace GifDump
 
                     var packed = file.ReadByte();
                     var gctSize = (int) ( packed & 0x03 );
-                    var ctsf = ( packed & (int)Math.Pow(2,3) ) != 0;
-                    var colorRes = (int) ( (packed>>4) & 0x03 );
-                    var gctf = ( packed & (int) Math.Pow( 2, 7 ) ) != 0;
+                    var ctsf = ( packed & (1 << 3) ) != 0;
+                    var colorRes = (int) ( (packed >> 4) & 0x03 );
+                    var gctf = ( packed & ( 1 << 7 ) ) != 0;
                     Console.WriteLine( $" {gctSize}, {ctsf}, {colorRes}, {gctf}" );
 
                     var background = file.ReadByte();
@@ -92,12 +92,15 @@ namespace GifDump
                     var aspect = file.ReadByte();
                     Console.WriteLine( $" Aspect ratio: {(aspect+15)/64}" );
 
-                    var gctCount = Math.Pow( 2, gctSize );
-                    var gctSizeVal = 3 * gctCount;
-
-                    for ( int loop = 0; loop < gctCount; loop++ )
+                    if ( gctf ) // Is this if() logic correct?
                     {
-                        Console.WriteLine( $" #{file.ReadByte():x2}{file.ReadByte():x2}{file.ReadByte():x2}" );
+                        var gctCount = 1 << ( gctSize + 1 );
+                        var gctSizeVal = 3 * gctCount;
+
+                        for ( int loop = 0; loop < gctCount; loop++ )
+                        {
+                            Console.WriteLine( $" #{file.ReadByte():x2}{file.ReadByte():x2}{file.ReadByte():x2}" );
+                        }
                     }
 
 
