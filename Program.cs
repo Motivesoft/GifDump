@@ -13,6 +13,18 @@ namespace GifDump
             bytes = File.ReadAllBytes( @"C:\Users\ian\Pictures\Saved Pictures\mmgood.gif" );
         }
 
+        public void Rewind( int distance = 1 )
+        {
+            index -= distance;
+        }
+
+        public byte PeekByte()
+        {
+            byte[] value = ReadBytes( 1 );
+            Rewind( 1 );
+            return value[ 0 ];
+        }
+
         public byte ReadByte()
         {
             byte[] value = ReadBytes( 1 );
@@ -80,10 +92,10 @@ namespace GifDump
                     Console.WriteLine( $"W/H: {width}, {height}" );
 
                     var packed = file.ReadByte();
-                    var gctSize = (int) ( packed & 0x03 );
-                    var ctsf = ( packed & (1 << 3) ) != 0;
-                    var colorRes = (int) ( (packed >> 4) & 0x03 );
-                    var gctf = ( packed & ( 1 << 7 ) ) != 0;
+                    var gctSize = (int) ( packed & 0b00000111 );
+                    var ctsf = ( packed & ( 0b00001000 ) ) != 0;
+                    var colorRes = (int) ( (packed & 0b01110000) >> 4 );
+                    var gctf = ( packed & ( 0b10000000 ) ) != 0;
                     Console.WriteLine( $" {gctSize}, {ctsf}, {colorRes}, {gctf}" );
 
                     var background = file.ReadByte();
@@ -97,13 +109,45 @@ namespace GifDump
                         var gctCount = 1 << ( gctSize + 1 );
                         var gctSizeVal = 3 * gctCount;
 
-                        for ( int loop = 0; loop < gctCount; loop++ )
+                        Console.WriteLine( $"Colour count: {gctCount}" );
+                        for ( int loop = 0; loop < gctCount; loop++ ) 
                         {
                             Console.WriteLine( $" #{file.ReadByte():x2}{file.ReadByte():x2}{file.ReadByte():x2}" );
                         }
                     }
 
 
+                    while ( file.PeekByte() == 0x21 )
+                    {
+                        file.ReadByte();
+                        var extensionType = file.ReadByte();
+
+                        switch ( extensionType )
+                        {
+
+                            case 0xFF: // Application Extension
+                                var blockSize = file.ReadByte();
+                                var appIdentifier = file.ReadBytes( blockSize - 3 );
+                                var authCode = file.ReadBytes( 3 );
+
+                                var appDataLen = file.ReadByte();
+                                var appData = file.ReadBytes( appDataLen );
+                                var blockEnd = file.ReadByte();
+                                break;
+                        }
+                    }
+
+                    // Local Image Descriptor
+                    {
+                        var iseparator = file.ReadByte();
+
+                        var ileft = file.ReadWord();
+                        var itop = file.ReadWord();
+                        var iwidth = file.ReadWord();
+                        var iheight = file.ReadWord();
+                        var ipacked = file.ReadWord();
+                        Console.WriteLine( $" {ileft},{itop}-{iwidth},{iheight}" );
+                    }
                 }
                 else
                 {
