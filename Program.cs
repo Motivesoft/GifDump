@@ -151,6 +151,7 @@ namespace GifDump
 
                     // Local Image Descriptor
                     {
+                        Console.WriteLine( $"Local Image Descriptor" );
                         var iseparator = file.ReadByte();
 
                         var ileft = file.ReadWord();
@@ -159,6 +160,17 @@ namespace GifDump
                         var iheight = file.ReadWord();
                         var ipacked = file.ReadWord();
                         Console.WriteLine( $" {ileft},{itop}-{iwidth},{iheight}" );
+                        var ilctf = ( ipacked & 0b10000000 ) != 0;
+                        var iInterfaceFlag = ( ipacked & 0b01000000 ) != 0;
+                        var iSortFlag = ( ipacked & 0b00100000 ) != 0;
+                        var iReserved = ( ipacked & 0b00011000 ) >> 3; // Don't really need this
+                        var iLCTSize = ( ipacked & 0b00000111 );
+                        Console.Write( $" {ilctf}, {iInterfaceFlag},{iSortFlag},{iReserved},{iLCTSize}" );
+                        if ( ilctf )
+                        {
+                            Console.Write( $" ({1 << ( iLCTSize + 1 )})" );
+                        }
+                        Console.WriteLine();
                     }
                 }
                 else
