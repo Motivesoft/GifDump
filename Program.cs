@@ -60,8 +60,6 @@ namespace GifDump
 
         static void Main( string[] args )
         {
-            Console.WriteLine( "Hello World!" );
-
             bool isGIF;
             Spec spec = Spec.Unknown;
 
@@ -116,127 +114,140 @@ namespace GifDump
                         }
                     }
 
-
-                    while ( file.PeekByte() == 0x21 )
+                    while ( true )
                     {
-                        var introducer = file.ReadByte(); // 0x21
-                        var extensionType = file.ReadByte();
-
-                        switch ( extensionType )
+                        if ( file.PeekByte() == 0x3B )
                         {
-                            case 0x01: // Plain Text
-                            {
-                                Console.WriteLine( $"Plain Text Extension" );
-                                var blockSize = file.ReadByte();
-                                var textGridLeft = file.ReadWord();
-                                var textGridTop = file.ReadWord();
-                                var textGridWidth = file.ReadWord();
-                                var textGridHeight = file.ReadWord();
-                                var cellWidth = file.ReadByte();
-                                var cellHeight = file.ReadByte();
-                                var fgColourIndex = file.ReadByte();
-                                var bgColourIndex = file.ReadByte();
-
-                                Console.WriteLine( $"  {textGridLeft},{textGridTop}-{textGridWidth},{textGridHeight}" );
-                                Console.WriteLine( $"    {cellWidth},{cellHeight}" );
-                                Console.WriteLine( $"    {fgColourIndex},{bgColourIndex}" );
-
-                                while ( file.PeekByte() > 0 )
-                                {
-                                    var size = file.ReadByte();
-                                    var plainText = file.ReadBytes( size );
-
-                                    Console.WriteLine( $"  Plain Text of size: {size}" );
-                                }
-                                break;
-                            }
-
-                            case 0xF9: // Graphic Control
-                            {
-                                Console.WriteLine( $"Graphic Control Extension" );
-                                var blockSize = file.ReadByte();
-                                var gpacked = file.ReadByte();
-                                var delayTime = file.ReadWord();
-                                var transparentColorIndex = file.ReadByte();
-                                break;
-                            }
-
-                            case 0xFE: // Comment
-                            {
-                                Console.WriteLine( $"Comment Extension" );
-                                var blockSize = file.ReadByte();
-
-                                while ( file.PeekByte() > 0 )
-                                {
-                                    var size = file.ReadByte();
-                                    var comment = file.ReadBytes( size );
-
-                                    Console.WriteLine( $"  Comment Data of size: {size}" );
-                                }
-                                break;
-                            }
-
-                            case 0xFF: // Application Extension
-                            {
-                                Console.WriteLine( $"Application Extension" );
-                                var blockSize = file.ReadByte();
-                                var appIdentifier = file.ReadBytes( blockSize - 3 );
-                                var authCode = file.ReadBytes( 3 );
-
-                                var appDataLen = file.ReadByte();
-                                var appData = file.ReadBytes( appDataLen );
-                                break;
-                            }
-
-                            default:
-                            {
-                                Console.WriteLine( $"**Unknown Extension" );
-                                var blockSize = file.ReadByte();
-                                // Dunno what to do here
-                                file.ReadBytes( blockSize );
-                                break;
-                            }
+                            // Step out - reached the end
+                            break;
                         }
-                        var blockEnd = file.ReadByte();
-                    }
-
-                    // Local Image Descriptor
-                    {
-                        Console.WriteLine( $"Local Image Descriptor" );
-                        var iseparator = file.ReadByte();
-
-                        var ileft = file.ReadWord();
-                        var itop = file.ReadWord();
-                        var iwidth = file.ReadWord();
-                        var iheight = file.ReadWord();
-                        var ipacked = file.ReadWord();
-                        Console.WriteLine( $" {ileft},{itop}-{iwidth},{iheight}" );
-                        var ilctf = ( ipacked & 0b10000000 ) != 0;
-                        var iInterfaceFlag = ( ipacked & 0b01000000 ) != 0;
-                        var iSortFlag = ( ipacked & 0b00100000 ) != 0;
-                        var iReserved = ( ipacked & 0b00011000 ) >> 3; // Don't really need this
-                        var iLCTSize = ( ipacked & 0b00000111 );
-                        Console.Write( $" {ilctf}, {iInterfaceFlag},{iSortFlag},{iReserved},{iLCTSize}" );
-                        if ( ilctf )
+                        while ( file.PeekByte() == 0x21 )
                         {
-                            Console.WriteLine( $" ({1 << ( iLCTSize + 1 )})" );
+                            var introducer = file.ReadByte(); // 0x21
+                            var extensionType = file.ReadByte();
+
+                            switch ( extensionType )
+                            {
+                                case 0x01: // Plain Text
+                                {
+                                    Console.WriteLine( $"Plain Text Extension" );
+                                    var blockSize = file.ReadByte();
+                                    var textGridLeft = file.ReadWord();
+                                    var textGridTop = file.ReadWord();
+                                    var textGridWidth = file.ReadWord();
+                                    var textGridHeight = file.ReadWord();
+                                    var cellWidth = file.ReadByte();
+                                    var cellHeight = file.ReadByte();
+                                    var fgColourIndex = file.ReadByte();
+                                    var bgColourIndex = file.ReadByte();
+
+                                    Console.WriteLine( $"  {textGridLeft},{textGridTop}-{textGridWidth},{textGridHeight}" );
+                                    Console.WriteLine( $"    {cellWidth},{cellHeight}" );
+                                    Console.WriteLine( $"    {fgColourIndex},{bgColourIndex}" );
+
+                                    while ( file.PeekByte() > 0 )
+                                    {
+                                        var size = file.ReadByte();
+                                        var plainText = file.ReadBytes( size );
+
+                                        Console.WriteLine( $"  Plain Text of size: {size}" );
+                                    }
+                                    break;
+                                }
+
+                                case 0xF9: // Graphic Control
+                                {
+                                    Console.WriteLine( $"Graphic Control Extension" );
+                                    var blockSize = file.ReadByte();
+                                    var gpacked = file.ReadByte();
+                                    var delayTime = file.ReadWord();
+                                    var transparentColorIndex = file.ReadByte();
+                                    break;
+                                }
+
+                                case 0xFE: // Comment
+                                {
+                                    Console.WriteLine( $"Comment Extension" );
+                                    var blockSize = file.ReadByte();
+
+                                    while ( file.PeekByte() > 0 )
+                                    {
+                                        var size = file.ReadByte();
+                                        var comment = file.ReadBytes( size );
+
+                                        Console.WriteLine( $"  Comment Data of size: {size}" );
+                                    }
+                                    break;
+                                }
+
+                                case 0xFF: // Application Extension
+                                {
+                                    Console.WriteLine( $"Application Extension" );
+                                    var blockSize = file.ReadByte();
+                                    var appIdentifier = file.ReadBytes( blockSize - 3 );
+                                    var authCode = file.ReadBytes( 3 );
+
+                                    var appDataLen = file.ReadByte();
+                                    var appData = file.ReadBytes( appDataLen );
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    Console.WriteLine( $"**Unknown Extension" );
+                                    var blockSize = file.ReadByte();
+                                    // Dunno what to do here
+                                    file.ReadBytes( blockSize );
+                                    break;
+                                }
+                            }
+                            var blockEnd = file.ReadByte();
+                        }
+
+                        var iseparator = file.ReadByte();
+                        if ( iseparator == 0x2C )
+                        {
+                            // Local Image Descriptor
+                            Console.WriteLine( $"Local Image Descriptor" );
+
+                            var ileft = file.ReadWord();
+                            var itop = file.ReadWord();
+                            var iwidth = file.ReadWord();
+                            var iheight = file.ReadWord();
+                            var ipacked = file.ReadByte();
+                            Console.WriteLine( $" {ileft},{itop}-{iwidth},{iheight} {ipacked:x2}" );
+
+                            // TODO some difference between GIF87 and GIF89 here? Not significant though
+
+                            var ilctf = ( ipacked & 0b10000000 ) != 0;
+                            var iInterfaceFlag = ( ipacked & 0b01000000 ) != 0;
+                            var iSortFlag = ( ipacked & 0b00100000 ) != 0;
+                            var iReserved = ( ipacked & 0b00011000 ) >> 3; // Don't really need this
+                            var iLCTSize = ( ipacked & 0b00000111 );
+                            Console.Write( $" {ilctf},{iInterfaceFlag},{iSortFlag},{iReserved},{iLCTSize}" );
 
                             if ( ilctf )
                             {
-                                Console.WriteLine( $"Local Color Table" );
-                                for ( int i = 0; i < 1 << ( iLCTSize + 1 ); i++ )
+                                Console.WriteLine( $" ({1 << ( iLCTSize + 1 )})" );
+
+                                if ( ilctf )
                                 {
-                                    Console.WriteLine( $" #{file.ReadByte():x2}{file.ReadByte():x2}{file.ReadByte():x2}" );
+                                    Console.WriteLine( $"Local Color Table" );
+                                    for ( int i = 0; i < 1 << ( iLCTSize + 1 ); i++ )
+                                    {
+                                        Console.WriteLine( $" #{file.ReadByte():x2}{file.ReadByte():x2}{file.ReadByte():x2}" );
+                                    }
                                 }
                             }
-                        }
-                        else
-                        {
-                            Console.WriteLine();
-                        }
+                            else
+                            {
+                                Console.WriteLine();
+                            }
 
-                        Console.WriteLine( $"Table Based Image Data" );
-
+                            Console.WriteLine( $"Table Based Image Data" );
+                            var bNext = file.ReadByte();
+                            //var x = file.ReadByte();
+                        }
                     }
                 }
                 else
