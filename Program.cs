@@ -119,18 +119,60 @@ namespace GifDump
 
                     while ( file.PeekByte() == 0x21 )
                     {
-                        file.ReadByte();
+                        var introducer = file.ReadByte(); // 0x21
                         var extensionType = file.ReadByte();
 
                         switch ( extensionType )
                         {
+                            case 0x01: // Plain Text
+                            {
+                                Console.WriteLine( $"Plain Text Extension" );
+                                var blockSize = file.ReadByte();
+                                var textGridLeft = file.ReadWord();
+                                var textGridTop = file.ReadWord();
+                                var textGridWidth = file.ReadWord();
+                                var textGridHeight = file.ReadWord();
+                                var cellWidth = file.ReadByte();
+                                var cellHeight = file.ReadByte();
+                                var fgColourIndex = file.ReadByte();
+                                var bgColourIndex = file.ReadByte();
+
+                                Console.WriteLine( $"  {textGridLeft},{textGridTop}-{textGridWidth},{textGridHeight}" );
+                                Console.WriteLine( $"    {cellWidth},{cellHeight}" );
+                                Console.WriteLine( $"    {fgColourIndex},{bgColourIndex}" );
+
+                                while ( file.PeekByte() > 0 )
+                                {
+                                    var size = file.ReadByte();
+                                    var plainText = file.ReadBytes( size );
+
+                                    Console.WriteLine( $"  Plain Text of size: {size}" );
+                                }
+                                break;
+                            }
+
                             case 0xF9: // Graphic Control
                             {
-                                Console.WriteLine( $"Graphic Control" );
+                                Console.WriteLine( $"Graphic Control Extension" );
                                 var blockSize = file.ReadByte();
                                 var gpacked = file.ReadByte();
                                 var delayTime = file.ReadWord();
                                 var transparentColorIndex = file.ReadByte();
+                                break;
+                            }
+
+                            case 0xFE: // Comment
+                            {
+                                Console.WriteLine( $"Comment Extension" );
+                                var blockSize = file.ReadByte();
+
+                                while ( file.PeekByte() > 0 )
+                                {
+                                    var size = file.ReadByte();
+                                    var comment = file.ReadBytes( size );
+
+                                    Console.WriteLine( $"  Comment Data of size: {size}" );
+                                }
                                 break;
                             }
 
@@ -143,6 +185,15 @@ namespace GifDump
 
                                 var appDataLen = file.ReadByte();
                                 var appData = file.ReadBytes( appDataLen );
+                                break;
+                            }
+
+                            default:
+                            {
+                                Console.WriteLine( $"**Unknown Extension" );
+                                var blockSize = file.ReadByte();
+                                // Dunno what to do here
+                                file.ReadBytes( blockSize );
                                 break;
                             }
                         }
@@ -168,9 +219,24 @@ namespace GifDump
                         Console.Write( $" {ilctf}, {iInterfaceFlag},{iSortFlag},{iReserved},{iLCTSize}" );
                         if ( ilctf )
                         {
-                            Console.Write( $" ({1 << ( iLCTSize + 1 )})" );
+                            Console.WriteLine( $" ({1 << ( iLCTSize + 1 )})" );
+
+                            if ( ilctf )
+                            {
+                                Console.WriteLine( $"Local Color Table" );
+                                for ( int i = 0; i < 1 << ( iLCTSize + 1 ); i++ )
+                                {
+                                    Console.WriteLine( $" #{file.ReadByte():x2}{file.ReadByte():x2}{file.ReadByte():x2}" );
+                                }
+                            }
                         }
-                        Console.WriteLine();
+                        else
+                        {
+                            Console.WriteLine();
+                        }
+
+                        Console.WriteLine( $"Table Based Image Data" );
+
                     }
                 }
                 else
