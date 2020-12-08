@@ -41,6 +41,11 @@ namespace GifDump
 
         public byte[] ReadBytes( int length )
         {
+            if ( length == 0 )
+            {
+                return new byte[0];
+            }
+
             byte[] value = new byte[ length ];
             for ( int loop = 0; loop < length; loop++ )
             {
@@ -245,8 +250,15 @@ namespace GifDump
                             }
 
                             Console.WriteLine( $"Table Based Image Data" );
-                            var bNext = file.ReadByte();
-                            //var x = file.ReadByte();
+
+                            int bCount;
+                            do
+                            {
+                                bCount = file.ReadByte();
+                                Console.WriteLine( $" count: {bCount}" );
+
+                                var b = file.ReadBytes( bCount );
+                            } while ( bCount > 0 );
                         }
                     }
                 }
