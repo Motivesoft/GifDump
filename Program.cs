@@ -10,7 +10,7 @@ namespace GifDump
 
         public GiFile( String filename )
         {
-            bytes = File.ReadAllBytes( @"C:\Users\ian\Pictures\Saved Pictures\mmgood.gif" );
+            bytes = File.ReadAllBytes( filename );
         }
 
         public void Rewind( int distance = 1 )
@@ -68,7 +68,7 @@ namespace GifDump
             bool isGIF;
             Spec spec = Spec.Unknown;
 
-            var file = new GiFile( @"C:\Users\ian\Pictures\Saved Pictures\mmgood.gif" );
+            var file = new GiFile( @"C:\Users\ian\Documents\Condaluna Stickers\Photo 01-10-2020, 01 02 37.gif" );
 
             {
                 var header = file.ReadBytes( 3 );
@@ -251,14 +251,18 @@ namespace GifDump
 
                             Console.WriteLine( $"Table Based Image Data" );
 
-                            int bCount;
-                            do
-                            {
-                                bCount = file.ReadByte();
-                                Console.WriteLine( $" count: {bCount}" );
+                            var blockNum = file.ReadByte();
+                            Console.WriteLine( $"Sub-block count: {blockNum}" );
 
-                                var b = file.ReadBytes( bCount );
-                            } while ( bCount > 0 );
+                            while( file.PeekByte() > 0 )
+                            {
+                                var blockLen = file.ReadByte();
+                                var block = file.ReadBytes( blockLen );
+
+                                Console.WriteLine( $"Sub-block len: {blockLen}" );
+                            }
+
+                            var zero = file.PeekByte();
                         }
                     }
                 }
