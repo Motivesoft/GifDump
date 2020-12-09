@@ -68,7 +68,13 @@ namespace GifDump
             bool isGIF;
             Spec spec = Spec.Unknown;
 
-            var file = new GiFile( @"C:\Users\ian\Documents\Condaluna Stickers\Photo 01-10-2020, 01 02 37.gif" );
+            if ( args.Length < 1 )
+            {
+                Console.Error.WriteLine("Provide the filename of a GIF");
+                Environment.Exit( 1 );
+            }
+
+            var file = new GiFile( args[0] );
 
             {
                 var header = file.ReadBytes( 3 );
@@ -124,6 +130,7 @@ namespace GifDump
                         if ( file.PeekByte() == 0x3B )
                         {
                             // Step out - reached the end
+                            Console.WriteLine( $"End" );
                             break;
                         }
                         while ( file.PeekByte() == 0x21 )
