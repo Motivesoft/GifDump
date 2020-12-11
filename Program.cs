@@ -96,30 +96,33 @@ namespace GifDump
 
                     Console.WriteLine( $"{spec}" );
 
+                    Console.WriteLine( $"Logical Screen Descriptor" );
                     var width = file.ReadWord();
                     var height = file.ReadWord();
-                    Console.WriteLine( $"W/H: {width}, {height}" );
+                    Console.WriteLine( $" Width/Height: {width}, {height}" );
 
                     var packed = file.ReadByte();
-                    var gctSize = (int) ( packed & 0b00000111 );
-                    var ctsf = ( packed & ( 0b00001000 ) ) != 0;
-                    var colorRes = (int) ( (packed & 0b01110000) >> 4 );
-                    var gctf = ( packed & ( 0b10000000 ) ) != 0;
-                    Console.WriteLine( $" {gctSize}, {ctsf}, {colorRes}, {gctf}" );
+                    var globalColourTableSize = (int) ( packed & 0b00000111 );
+                    var colourTableSortFlag = ( packed & ( 0b00001000 ) ) != 0;
+                    var colourResolution = (int) ( (packed & 0b01110000) >> 4 );
+                    var globalColourTableFlag = ( packed & ( 0b10000000 ) ) != 0;
+                    Console.WriteLine( $" Global colour table size: {globalColourTableSize} ({1<<(globalColourTableSize+1)})" );
+                    Console.WriteLine( $" Colour table sort flag: {colourTableSortFlag}" );
+                    Console.WriteLine( $" Colour resolution: {colourResolution} ({1<<(1+colourResolution)})" );
+                    Console.WriteLine( $" Global colour table flag: {globalColourTableFlag}" );
 
                     var background = file.ReadByte();
-                    Console.WriteLine( $" Background colour index: {background}" );
+                    Console.WriteLine( $" Background colour index: {background} (if meaningful, based on flag: {globalColourTableFlag})" );
 
                     var aspect = file.ReadByte();
-                    Console.WriteLine( $" Aspect ratio: {(aspect+15)/64}" );
+                    Console.WriteLine( $" Aspect ratio: {aspect} ({(aspect+15)/64})" );
 
-                    if ( gctf ) // Is this if() logic correct?
+                    if ( globalColourTableFlag )
                     {
-                        var gctCount = 1 << ( gctSize + 1 );
-                        var gctSizeVal = 3 * gctCount;
+                        var globalColourTableEntries = 1 << ( globalColourTableSize + 1 );
 
-                        Console.WriteLine( $"Colour count: {gctCount}" );
-                        for ( int loop = 0; loop < gctCount; loop++ ) 
+                        Console.WriteLine( $"Global Colour Table. Entries: {globalColourTableEntries}" );
+                        for ( int loop = 0; loop < globalColourTableEntries; loop++ ) 
                         {
                             Console.WriteLine( $" #{file.ReadByte():x2}{file.ReadByte():x2}{file.ReadByte():x2}" );
                         }
@@ -142,7 +145,7 @@ namespace GifDump
                             {
                                 case 0x01: // Plain Text
                                 {
-                                    Console.WriteLine( $"Plain Text Extension" );
+                                    Console.WriteLine( $"{extensionType:2x}: Plain Text Extension" );
                                     var blockSize = file.ReadByte();
                                     var textGridLeft = file.ReadWord();
                                     var textGridTop = file.ReadWord();
@@ -153,60 +156,83 @@ namespace GifDump
                                     var fgColourIndex = file.ReadByte();
                                     var bgColourIndex = file.ReadByte();
 
-                                    Console.WriteLine( $"  {textGridLeft},{textGridTop}-{textGridWidth},{textGridHeight}" );
-                                    Console.WriteLine( $"    {cellWidth},{cellHeight}" );
-                                    Console.WriteLine( $"    {fgColourIndex},{bgColourIndex}" );
+                                    Console.WriteLine( $"  blockSize: {blockSize}" );
+                                    Console.WriteLine( $"  textGrid: {textGridLeft},{textGridTop}-{textGridWidth},{textGridHeight}" );
+                                    Console.WriteLine( $"  cellSze: {cellWidth}x{cellHeight}" );
+                                    Console.WriteLine( $"  foreground/background colour index: {fgColourIndex}, {bgColourIndex}" );
 
                                     while ( file.PeekByte() > 0 )
                                     {
                                         var size = file.ReadByte();
                                         var plainText = file.ReadBytes( size );
 
-                                        Console.WriteLine( $"  Plain Text of size: {size}" );
+                                        Console.WriteLine( $"  Plain Text of size: {size} ({ByteArrayToString( plainText )})" );
                                     }
                                     break;
                                 }
 
                                 case 0xF9: // Graphic Control
                                 {
-                                    Console.WriteLine( $"Graphic Control Extension" );
+                                    Console.WriteLine( $"{extensionType:x2}: Graphic Control Extension" );
                                     var blockSize = file.ReadByte();
                                     var gpacked = file.ReadByte();
                                     var delayTime = file.ReadWord();
                                     var transparentColorIndex = file.ReadByte();
+
+                                    var binRepresentation = "00000000" + Convert.ToString( gpacked, 2 );
+                                    Console.WriteLine( $"  blockSize: {blockSize}" );
+                                    Console.WriteLine( $"  packed: {binRepresentation.Substring(binRepresentation.Length-8)}" );
+                                    Console.WriteLine( $"  delayTime: {delayTime}" );
+                                    Console.WriteLine( $"  transparentColourIndex: {transparentColorIndex}" );
                                     break;
                                 }
 
                                 case 0xFE: // Comment
                                 {
-                                    Console.WriteLine( $"Comment Extension" );
+                                    Console.WriteLine( $"{extensionType:x2}: Comment Extension" );
                                     var blockSize = file.ReadByte();
 
+                                    Console.WriteLine( $"  blockSize: {blockSize}" );
                                     while ( file.PeekByte() > 0 )
                                     {
                                         var size = file.ReadByte();
                                         var comment = file.ReadBytes( size );
 
-                                        Console.WriteLine( $"  Comment Data of size: {size}" );
+                                        Console.WriteLine( $"  Comment Data of size: {size} ({ByteArrayToString(comment)})" );
                                     }
                                     break;
                                 }
 
                                 case 0xFF: // Application Extension
                                 {
-                                    Console.WriteLine( $"Application Extension" );
+                                    Console.WriteLine( $"{extensionType:x2}: Application Extension" );
                                     var blockSize = file.ReadByte();
                                     var appIdentifier = file.ReadBytes( blockSize - 3 );
                                     var authCode = file.ReadBytes( 3 );
 
                                     var appDataLen = file.ReadByte();
                                     var appData = file.ReadBytes( appDataLen );
+
+                                    Console.WriteLine( $"  blockSize: {blockSize}" );
+                                    Console.WriteLine( $"  appIdentifier: {ByteArrayToString(appIdentifier)}" );
+                                    Console.WriteLine( $"  authCode: {ByteArrayToString( authCode )}" );
+
+                                    var text = "";
+                                    foreach ( var b in appData )
+                                    {
+                                        if ( text.Length > 0 )
+                                        {
+                                            text += " ";
+                                        }
+                                        text += $"{b:x2}";
+                                    }
+                                    Console.WriteLine( $"  appDataLen: {appDataLen} ({text})" );
                                     break;
                                 }
 
                                 default:
                                 {
-                                    Console.WriteLine( $"**Unknown Extension" );
+                                    Console.WriteLine( $"{extensionType:x2}: Unknown Extension" );
                                     var blockSize = file.ReadByte();
                                     // Dunno what to do here
                                     file.ReadBytes( blockSize );
@@ -278,6 +304,16 @@ namespace GifDump
                     Console.WriteLine( $"Not a GIF" );
                 }
             }
+        }
+
+        static string ByteArrayToString( byte[] array )
+        {
+            var text = "";
+            foreach ( var b in array )
+            {
+                text += (char) b;
+            }
+            return text;
         }
 
         static bool Compare( byte[] buffer, String value )
